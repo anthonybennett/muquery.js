@@ -1,19 +1,32 @@
-/*! muquery.js by Anthony Bennett; released under the LGPL on 2014/02/14 */
+/*! muquery.js by Anthony Bennett; released under the LGPL on 2014/02/15 */
 (function(win, doc, Aprototype, Elprototype) {
 	"use strict";
 
-	// private functions
+	// private functions, data
 	var slice = Aprototype.slice,
 		matches = (Elprototype.matches ||
 					Elprototype.webkitMatchesSelector ||
 					Elprototype.mozMatchesSelector ||
 					Elprototype.oMatchesSelector ||
-					Elprototype.msMatchesSelector);
-
-	// save some typing on addEventListener
-	win.on = win.addEventListener;
-	doc.on = doc.addEventListener;
-	Elprototype.on = Elprototype.addEventListener;
+					Elprototype.msMatchesSelector),
+		events = [],
+		splitEventType = function(eventType) {
+			eventType = eventType.split(".");
+			return {
+				type: eventType[0],
+				namespace: ((eventType.length < 2) ? "" :
+							eventType.slice(1).join("."))
+			};
+		},
+		eventMatches = function(el, eventType, selector, event) {
+			return ((event.el == el) &&
+					(!eventType.type.length ||
+					(event.type == eventType.type)) &&
+					(!eventType.namespace.length ||
+					(event.namespace == eventType.namespace)) &&
+					(!selector ||
+					(event.selector == selector)));
+		};
 
 	// define muquery
 	var mu = win.mu = {
@@ -30,7 +43,7 @@
 			var ancestor = el;
 			while (ancestor != document) {
 				ancestor = ancestor.parentNode;
-				if (!selector || mu.is(ancestor, selector)) {
+				if (mu.is(ancestor, selector)) {
 					return ancestor;
 				}
 			}
@@ -47,7 +60,7 @@
 			return el.previousElementSibling;
 		},
 		is: function(el, selector) {
-			return matches.call(el, selector);
+			return (selector ? matches.call(el, selector) : true);
 		},
 		filter: function(els, selector) {
 			if (els instanceof NodeList) {
@@ -91,15 +104,68 @@
 		},
 		// equivalent of $(fn);
 		ready: function(fn) {
-			doc.on("DOMContentLoaded", fn, false);
+			doc.addEventListener("DOMContentLoaded", fn, false);
 		},
-		// equivalent of $el.on(eventName, selector, handler);
-		on: function(el, eventName, selector, handler) {
-			el.on(eventName, function(event) {
-				if (mu.is(event.target, selector)) {
-					handler.call(event.target, event);
+		// event binding/unbinding/triggering
+		on: function(el, eventType, selector, handler) {
+			// split event type into type and namespace
+			eventType = splitEventType(eventType);
+			// wrap handler if selector given
+			if (selector) {
+				var _handler = handler;
+				handler = function(event) {
+					if (mu.is(event.target, selector)) {
+						_handler.call(event.target, event);
+					}
+				};
+			}
+			// register event
+			events.push({
+				el: el,
+				type: eventType.type,
+				namespace: eventType.namespace,
+				selector: selector,
+				handler: handler
+			});
+			// add event listener to element
+			el.addEventListener(eventType, handler, false);
+		},
+		off: function(el, eventType, selector) {
+			// split event type into type and namespace
+			eventType = splitEventType(eventType);
+			// loop over registered events
+			var temp = [];
+			events.forEach(function(event) {
+				// if element and other options match,
+				// remove event listener(s) from element;
+				// otherwise, keep event registered
+				if (eventMatches(el, eventType, selector, event)) {
+					el.removeEventListener(event.type, event.handler, false);
+				} else {
+					temp.push(event);
 				}
 			});
+			events = temp;
+		},
+		trigger: function(el, eventType, data) {
+			// split event type into type and namespace
+			eventType = splitEventType(eventType);
+			// construct data object
+			if (!data) { data = {}; }
+			data.target = el;
+			data.type = eventType.type;
+			// loop over registered events
+			var found = false;
+			events.forEach(function(event) {
+				// if element and other options match,
+				// manually trigger our handlers
+				if (eventMatches(el, eventType, null, event)) {
+					found = true;
+					event.handler.call(el, data);
+				}
+			});
+			// if no matches found, dispatch event normally
+			if (!found) { el.dispatchEvent(new Event(eventType.type)); }
 		}
 	};
 }(window, document, Array.prototype, Element.prototype));
