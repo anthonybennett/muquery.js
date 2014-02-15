@@ -23,8 +23,13 @@ projects (listed below) and greatly indebted
 to the Mozilla Developer Network for their
 fine documentation.
 
+UPDATE: As of the third commit, I've polyfilled
+it so it works in IE9. I'm not planning on going
+further with that.
+
 1. http://blog.ponyfoo.com/2013/07/09/getting-over-jquery
 2. http://blog.adtile.me/2014/01/16/a-dive-into-plain-javascript/
-3. http://vanilla-js.com/
-4. http://underscorejs.org/
-5. http://prototypejs.org/
+3. http://responsivenews.co.uk/post/18948466399/cutting-the-mustard
+4. http://vanilla-js.com/
+5. http://underscorejs.org/
+6. http://prototypejs.org/

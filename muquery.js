@@ -2,8 +2,24 @@
 (function(win, doc, Aprototype, Elprototype) {
 	"use strict";
 
+	// Features used below that require IE9+:
+	//   querySelector, querySelectorAll,
+	//   firstElementChild, nextElementSibling,
+	//   previousElementSibling, matches (prefixed)
+	//   textContent, Object.keys, Array.forEach,
+	//   addEventListener, removeEventListener,
+	//   dispatchEvent
+	// Features used below that require IE10+:
+	//   classList (polyfilled for IE9)
+
+	// Reject < IE9
+	if (!win.addEventListener || !doc.querySelector) {
+		throw "muquery.js requires a modern browser";
+	}
+
 	// private functions, data
 	var slice = Aprototype.slice,
+		canClassList = !!Elprototype.classList,
 		matches = (Elprototype.matches ||
 					Elprototype.webkitMatchesSelector ||
 					Elprototype.mozMatchesSelector ||
@@ -81,21 +97,43 @@
 			return el;
 		},
 		// class/style manipulation
-		addClass: function(el, className) {
+		addClass: (canClassList ? function(el, className) {
 			el.classList.add(className);
 			return el;
-		},
-		removeClass: function(el, className) {
+		} : function(el, className) {
+			if (!el.className) {
+				el.className = className;
+			} else if (!mu.hasClass(el.className)) {
+				el.className += (" " + className);
+			}
+			return el;
+		}),
+		removeClass: (canClassList ? function(el, className) {
 			el.classList.remove(className);
 			return el;
-		},
-		toggleClass: function(el, className) {
+		} : function(el, className) {
+			if (el.className && mu.hasClass(el.className)) {
+				var re = new RegExp("(\\s|^)" + className + "(\\s|$)");
+				el.className = el.className.replace(re, " ")
+								.replace(/(^\s*)|(\s*$)/g,"");
+			}
+			return el;
+		}),
+		toggleClass: (canClassList ? function(el, className) {
 			el.classList.toggle(className);
 			return el;
-		},
-		hasClass: function(el, className) {
+		} : function(el, className) {
+			var action = (mu.hasClass(el, className) ?
+							"removeClass" : "addClass");
+			return mu[action](el, className);
+		}),
+		hasClass: (canClassList ? function(el, className) {
 			return el.classList.contains(className);
-		},
+		} : function(el, className) {
+			if (!el.className) { return false; }
+			var re = new RegExp("(\\s|^)" + className + "(\\s|$)");
+			return re.test(el.className);
+		}),
 		css: function(el, styles) {
 			Object.keys(styles).forEach(function(key) {
 				el.style[key] = styles[key];
