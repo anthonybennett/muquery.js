@@ -20,6 +20,7 @@
 	// private functions, data
 	var slice = Aprototype.slice,
 		canClassList = !!Elprototype.classList,
+		classProp = (canClassList ? "classList" : "className"),
 		matches = (Elprototype.matches ||
 					Elprototype.webkitMatchesSelector ||
 					Elprototype.mozMatchesSelector ||
@@ -76,7 +77,7 @@
 			return el.previousElementSibling;
 		},
 		is: function(el, selector) {
-			return (selector ? matches.call(el, selector) : true);
+			return (!selector || matches.call(el, selector));
 		},
 		filter: function(els, selector) {
 			if (els instanceof NodeList) {
@@ -98,41 +99,41 @@
 		},
 		// class/style manipulation
 		addClass: (canClassList ? function(el, className) {
-			el.classList.add(className);
+			el[classProp].add(className);
 			return el;
 		} : function(el, className) {
-			if (!el.className) {
-				el.className = className;
-			} else if (!mu.hasClass(el.className)) {
-				el.className += (" " + className);
+			if (!el[classProp]) {
+				el[classProp] = className;
+			} else if (!mu.hasClass(el[classProp])) {
+				el[classProp] += (" " + className);
 			}
 			return el;
 		}),
 		removeClass: (canClassList ? function(el, className) {
-			el.classList.remove(className);
+			el[classProp].remove(className);
 			return el;
 		} : function(el, className) {
-			if (el.className && mu.hasClass(el.className)) {
+			if (el[classProp] && mu.hasClass(el[classProp])) {
 				var re = new RegExp("(\\s|^)" + className + "(\\s|$)");
-				el.className = el.className.replace(re, " ")
-								.replace(/(^\s*)|(\s*$)/g,"");
+				el[classProp] = el[classProp]
+								.replace(re, " ")
+								.replace(/(^\s*)|(\s*$)/g, "");
 			}
 			return el;
 		}),
 		toggleClass: (canClassList ? function(el, className) {
-			el.classList.toggle(className);
+			el[classProp].toggle(className);
 			return el;
 		} : function(el, className) {
-			var action = (mu.hasClass(el, className) ?
-							"removeClass" : "addClass");
-			return mu[action](el, className);
+			return mu[mu.hasClass(el, className) ?
+					"removeClass" : "addClass"](el, className);
 		}),
 		hasClass: (canClassList ? function(el, className) {
-			return el.classList.contains(className);
+			return el[classProp].contains(className);
 		} : function(el, className) {
-			if (!el.className) { return false; }
+			if (!el[classProp]) { return false; }
 			var re = new RegExp("(\\s|^)" + className + "(\\s|$)");
-			return re.test(el.className);
+			return re.test(el[classProp]);
 		}),
 		css: function(el, styles) {
 			Object.keys(styles).forEach(function(key) {
