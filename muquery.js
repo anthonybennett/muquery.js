@@ -149,14 +149,19 @@
 		on: function(el, eventType, selector, handler) {
 			// split event type into type and namespace
 			eventType = splitEventType(eventType);
-			// wrap handler if selector given
+			// wrap handler if selector given;
+			// take handler from selector if none given
 			if (selector) {
-				var _handler = handler;
-				handler = function(event) {
-					if (mu.is(event.target, selector)) {
-						_handler.call(event.target, event);
-					}
-				};
+				if (handler) {
+					var _handler = handler;
+					handler = function(event) {
+						if (mu.is(event.target, selector)) {
+							_handler.call(event.target, event);
+						}
+					};
+				} else {
+					handler = selector;
+				}
 			}
 			// register event
 			events.push({
@@ -167,7 +172,7 @@
 				handler: handler
 			});
 			// add event listener to element
-			el.addEventListener(eventType, handler, false);
+			el.addEventListener(eventType.type, handler, false);
 		},
 		off: function(el, eventType, selector) {
 			// split event type into type and namespace
